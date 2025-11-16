@@ -13,3 +13,34 @@ services:
 volumes:
   mongo-data:
     driver: local
+
+
+ml-client:
+    container_name: ml-client
+
+    build: ./machine-learning-client 
+    environment:
+  
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASS: ${MONGO_PASS}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+    depends_on:
+      - db
+
+
+  web-app:
+    container_name: web-app
+    build: ./web-app
+    ports:
+      - "5000:5000"
+    environment:
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASS: ${MONGO_PASS}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+    depends_on:
+      - db
+
+
+volumes:
+  mongo-data:
+    driver: local
