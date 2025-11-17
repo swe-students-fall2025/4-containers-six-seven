@@ -10,12 +10,7 @@ services:
     volumes:
       - mongo-data:/data/db
 
-volumes:
-  mongo-data:
-    driver: local
-
-
-ml-client:
+  ml-client:
     container_name: ml-client
 
     build: ./machine-learning-client 
@@ -26,7 +21,6 @@ ml-client:
       MONGO_DB_NAME: ${MONGO_DB_NAME}
     depends_on:
       - db
-
 
   web-app:
     container_name: web-app
@@ -39,7 +33,6 @@ ml-client:
       MONGO_DB_NAME: ${MONGO_DB_NAME}
     depends_on:
       - db
-
 
 volumes:
   mongo-data:
