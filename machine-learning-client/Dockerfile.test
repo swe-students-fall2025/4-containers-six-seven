@@ -1,0 +1,14 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all code including tests
+COPY . .
+
+# Run tests by default
+CMD ["pytest", "test_database.py", "-v", "--cov=.", "--cov-report=term-missing"]
+
