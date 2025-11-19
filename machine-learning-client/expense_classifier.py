@@ -141,4 +141,3 @@ def add_category_to_receipt(receipt_data: Dict[str, Any]) -> Dict[str, Any]:
     category = classify_expense(receipt_data)
     receipt_data["category"] = category
     return receipt_data
-

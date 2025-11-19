@@ -21,8 +21,7 @@ from database import ReceiptDatabase
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -109,8 +108,7 @@ def process_batch(directory: str, db: ReceiptDatabase) -> Dict[str, Any]:
     # Find all image files
     image_extensions = {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
     image_files = [
-        f for f in dir_path.iterdir()
-        if f.suffix.lower() in image_extensions
+        f for f in dir_path.iterdir() if f.suffix.lower() in image_extensions
     ]
 
     if not image_files:
@@ -176,7 +174,9 @@ def show_statistics(db: ReceiptDatabase):
             total = cat_stat["total"]
             avg = total / count if count > 0 else 0
 
-            print(f"  {category:20s}: {count:3d} receipts, ${total:8.2f} (avg: ${avg:.2f})")
+            print(
+                f"  {category:20s}: {count:3d} receipts, ${total:8.2f} (avg: ${avg:.2f})"
+            )
 
     print("=" * 60 + "\n")
 
@@ -204,46 +204,35 @@ Examples:
 
   # Process receipt with custom database settings
   python main.py --image receipt.jpg --db-name my_receipts
-        """
+        """,
     )
 
     # Arguments
     parser.add_argument(
-        "--image",
-        type=str,
-        help="Path to a single receipt image to process"
+        "--image", type=str, help="Path to a single receipt image to process"
     )
 
     parser.add_argument(
         "--batch",
         type=str,
-        help="Path to directory containing receipt images for batch processing"
+        help="Path to directory containing receipt images for batch processing",
     )
 
     parser.add_argument(
-        "--stats",
-        action="store_true",
-        help="Display database statistics"
+        "--stats", action="store_true", help="Display database statistics"
     )
 
     parser.add_argument(
-        "--db-host",
-        type=str,
-        default="mongodb",
-        help="MongoDB host (default: mongodb)"
+        "--db-host", type=str, default="mongodb", help="MongoDB host (default: mongodb)"
     )
 
     parser.add_argument(
         "--db-name",
         type=str,
-        help="MongoDB database name (overrides MONGO_DB_NAME env var)"
+        help="MongoDB database name (overrides MONGO_DB_NAME env var)",
     )
 
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose logging"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -260,10 +249,7 @@ Examples:
     # Initialize database
     try:
         logger.info("Connecting to database...")
-        db = ReceiptDatabase(
-            mongo_db_name=args.db_name,
-            mongo_host=args.db_host
-        )
+        db = ReceiptDatabase(mongo_db_name=args.db_name, mongo_host=args.db_host)
 
         if not db.connect():
             logger.error("Failed to connect to database")
@@ -290,7 +276,7 @@ Examples:
             print(f"Total:     ${receipt_data.get('total', 0):.2f}")
             print(f"Category:  {receipt_data.get('category', 'Unknown')}")
 
-            if receipt_data.get('items'):
+            if receipt_data.get("items"):
                 print(f"Items:     {len(receipt_data['items'])} item(s)")
 
             print(f"Confidence: {receipt_data.get('confidence', 0):.2%}")
@@ -323,4 +309,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

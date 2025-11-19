@@ -48,9 +48,7 @@ class ReceiptDatabase:
             bool: True if connection successful, False otherwise
         """
         try:
-            connection_string = (
-                f"mongodb://{self.mongo_user}:{self.mongo_pass}@{self.mongo_host}:27017/"
-            )
+            connection_string = f"mongodb://{self.mongo_user}:{self.mongo_pass}@{self.mongo_host}:27017/"
             self.client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
             # Test connection
             self.client.admin.command("ping")
@@ -111,9 +109,7 @@ class ReceiptDatabase:
             print(f"Error retrieving receipt: {e}")
             return None
 
-    def get_all_receipts(
-        self, limit: int = 100, skip: int = 0
-    ) -> List[Dict[str, Any]]:
+    def get_all_receipts(self, limit: int = 100, skip: int = 0) -> List[Dict[str, Any]]:
         """
         Retrieve all receipts with pagination.
 
@@ -138,9 +134,7 @@ class ReceiptDatabase:
             print(f"Error retrieving receipts: {e}")
             return []
 
-    def update_receipt(
-        self, receipt_id: str, update_data: Dict[str, Any]
-    ) -> bool:
+    def update_receipt(self, receipt_id: str, update_data: Dict[str, Any]) -> bool:
         """
         Update an existing receipt.
 
@@ -246,4 +240,3 @@ class ReceiptDatabase:
                 "total_amount": 0,
                 "by_category": [],
             }
-

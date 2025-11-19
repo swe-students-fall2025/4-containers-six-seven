@@ -10,10 +10,10 @@ from unittest.mock import MagicMock, patch, mock_open
 from pathlib import Path
 
 # Mock dependencies before importing main
-sys.modules['cv2'] = MagicMock()
-sys.modules['easyocr'] = MagicMock()
-sys.modules['openai'] = MagicMock()
-sys.modules['dotenv'] = MagicMock()
+sys.modules["cv2"] = MagicMock()
+sys.modules["easyocr"] = MagicMock()
+sys.modules["openai"] = MagicMock()
+sys.modules["dotenv"] = MagicMock()
 
 # Import numpy for tests (should be available)
 import numpy as np
@@ -43,10 +43,11 @@ class TestProcessSingleReceipt:
 
     def test_process_single_receipt_success(self, mock_db, mock_image):
         """Test successful processing of a single receipt."""
-        with patch("main.os.path.exists", return_value=True), \
-             patch("main.cv2.imread", return_value=mock_image), \
-             patch("main.process_receipt") as mock_ocr, \
-             patch("main.add_category_to_receipt") as mock_classify:
+        with patch("main.os.path.exists", return_value=True), patch(
+            "main.cv2.imread", return_value=mock_image
+        ), patch("main.process_receipt") as mock_ocr, patch(
+            "main.add_category_to_receipt"
+        ) as mock_classify:
 
             # Mock OCR result
             mock_ocr.return_value = {
@@ -92,8 +93,9 @@ class TestProcessSingleReceipt:
 
     def test_process_single_receipt_invalid_image(self, mock_db):
         """Test handling of invalid image file."""
-        with patch("main.os.path.exists", return_value=True), \
-             patch("main.cv2.imread", return_value=None):
+        with patch("main.os.path.exists", return_value=True), patch(
+            "main.cv2.imread", return_value=None
+        ):
 
             with pytest.raises(ValueError) as exc_info:
                 process_single_receipt("invalid.jpg", mock_db)
@@ -104,13 +106,18 @@ class TestProcessSingleReceipt:
         """Test handling when database insert fails."""
         mock_db.insert_receipt.return_value = None
 
-        with patch("main.os.path.exists", return_value=True), \
-             patch("main.cv2.imread", return_value=mock_image), \
-             patch("main.process_receipt") as mock_ocr, \
-             patch("main.add_category_to_receipt") as mock_classify:
+        with patch("main.os.path.exists", return_value=True), patch(
+            "main.cv2.imread", return_value=mock_image
+        ), patch("main.process_receipt") as mock_ocr, patch(
+            "main.add_category_to_receipt"
+        ) as mock_classify:
 
             mock_ocr.return_value = {"merchant": "Test", "total": 10.00}
-            mock_classify.return_value = {"merchant": "Test", "total": 10.00, "category": "Other"}
+            mock_classify.return_value = {
+                "merchant": "Test",
+                "total": 10.00,
+                "category": "Other",
+            }
 
             result = process_single_receipt("test.jpg", mock_db)
 
@@ -136,12 +143,16 @@ class TestProcessBatch:
 
         mock_image = np.zeros((100, 100, 3), dtype=np.uint8)
 
-        with patch("main.cv2.imread", return_value=mock_image), \
-             patch("main.process_receipt") as mock_ocr, \
-             patch("main.add_category_to_receipt") as mock_classify:
+        with patch("main.cv2.imread", return_value=mock_image), patch(
+            "main.process_receipt"
+        ) as mock_ocr, patch("main.add_category_to_receipt") as mock_classify:
 
             mock_ocr.return_value = {"merchant": "Test", "total": 10.00}
-            mock_classify.return_value = {"merchant": "Test", "total": 10.00, "category": "Other"}
+            mock_classify.return_value = {
+                "merchant": "Test",
+                "total": 10.00,
+                "category": "Other",
+            }
             mock_db.insert_receipt.return_value = "test_id"
 
             results = process_batch(str(tmp_path), mock_db)
@@ -178,12 +189,16 @@ class TestProcessBatch:
                 return None  # Simulate failed image load
             return mock_image
 
-        with patch("main.cv2.imread", side_effect=mock_imread_side_effect), \
-             patch("main.process_receipt") as mock_ocr, \
-             patch("main.add_category_to_receipt") as mock_classify:
+        with patch("main.cv2.imread", side_effect=mock_imread_side_effect), patch(
+            "main.process_receipt"
+        ) as mock_ocr, patch("main.add_category_to_receipt") as mock_classify:
 
             mock_ocr.return_value = {"merchant": "Test", "total": 10.00}
-            mock_classify.return_value = {"merchant": "Test", "total": 10.00, "category": "Other"}
+            mock_classify.return_value = {
+                "merchant": "Test",
+                "total": 10.00,
+                "category": "Other",
+            }
             mock_db.insert_receipt.return_value = "test_id"
 
             results = process_batch(str(tmp_path), mock_db)
@@ -248,8 +263,7 @@ class TestMainCLI:
 
     def test_main_no_arguments(self, capsys):
         """Test main with no arguments shows help."""
-        with patch("sys.argv", ["main.py"]), \
-             pytest.raises(SystemExit) as exc_info:
+        with patch("sys.argv", ["main.py"]), pytest.raises(SystemExit) as exc_info:
             main()
 
         assert exc_info.value.code == 1
@@ -260,12 +274,15 @@ class TestMainCLI:
         """Test main with --image argument."""
         mock_image = np.zeros((100, 100, 3), dtype=np.uint8)
 
-        with patch("sys.argv", ["main.py", "--image", "test.jpg"]), \
-             patch("main.ReceiptDatabase") as MockDB, \
-             patch("main.os.path.exists", return_value=True), \
-             patch("main.cv2.imread", return_value=mock_image), \
-             patch("main.process_receipt") as mock_ocr, \
-             patch("main.add_category_to_receipt") as mock_classify:
+        with patch("sys.argv", ["main.py", "--image", "test.jpg"]), patch(
+            "main.ReceiptDatabase"
+        ) as MockDB, patch("main.os.path.exists", return_value=True), patch(
+            "main.cv2.imread", return_value=mock_image
+        ), patch(
+            "main.process_receipt"
+        ) as mock_ocr, patch(
+            "main.add_category_to_receipt"
+        ) as mock_classify:
 
             # Setup mocks
             mock_db_instance = MagicMock()
@@ -289,9 +306,9 @@ class TestMainCLI:
 
     def test_main_with_stats_argument(self):
         """Test main with --stats argument."""
-        with patch("sys.argv", ["main.py", "--stats"]), \
-             patch("main.ReceiptDatabase") as MockDB, \
-             patch("main.show_statistics") as mock_show_stats:
+        with patch("sys.argv", ["main.py", "--stats"]), patch(
+            "main.ReceiptDatabase"
+        ) as MockDB, patch("main.show_statistics") as mock_show_stats:
 
             # Setup mock
             mock_db_instance = MagicMock()
@@ -306,9 +323,9 @@ class TestMainCLI:
 
     def test_main_db_connection_failure(self, capsys):
         """Test main when database connection fails."""
-        with patch("sys.argv", ["main.py", "--stats"]), \
-             patch("main.ReceiptDatabase") as MockDB, \
-             pytest.raises(SystemExit) as exc_info:
+        with patch("sys.argv", ["main.py", "--stats"]), patch(
+            "main.ReceiptDatabase"
+        ) as MockDB, pytest.raises(SystemExit) as exc_info:
 
             mock_db_instance = MagicMock()
             mock_db_instance.connect.return_value = False
@@ -320,9 +337,9 @@ class TestMainCLI:
 
     def test_main_keyboard_interrupt(self):
         """Test main handles keyboard interrupt gracefully."""
-        with patch("sys.argv", ["main.py", "--stats"]), \
-             patch("main.ReceiptDatabase") as MockDB, \
-             pytest.raises(SystemExit) as exc_info:
+        with patch("sys.argv", ["main.py", "--stats"]), patch(
+            "main.ReceiptDatabase"
+        ) as MockDB, pytest.raises(SystemExit) as exc_info:
 
             mock_db_instance = MagicMock()
             mock_db_instance.connect.return_value = True
@@ -332,4 +349,3 @@ class TestMainCLI:
             main()
 
         assert exc_info.value.code == 130  # Standard exit code for SIGINT
-

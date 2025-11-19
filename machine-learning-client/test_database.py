@@ -177,4 +177,3 @@ class TestDatabase:
         assert stats["total_receipts"] == 5, "Should have 5 total receipts"
         assert stats["total_amount"] == 150.50, "Total amount should be 150.50"
         assert len(stats["by_category"]) == 2, "Should have 2 categories"
-

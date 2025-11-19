@@ -88,7 +88,11 @@ class TestClassifyExpense:
             "scores": [0.95, 0.03, 0.02],
         }
 
-        receipt = {"merchant": "Starbucks", "items": [{"name": "Coffee"}], "total": 5.99}
+        receipt = {
+            "merchant": "Starbucks",
+            "items": [{"name": "Coffee"}],
+            "total": 5.99,
+        }
 
         category = classify_expense(receipt)
 
@@ -328,4 +332,3 @@ class TestAddCategoryToReceipt:
         assert (
             result["category"] == "Food & Dining"
         ), "Should overwrite existing category"
-
