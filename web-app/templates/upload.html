@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Upload Receipt</h2>
+
+<div class="mb-3">
+  <label for="receiptUpload" class="form-label">Drag & Drop or Select Receipt Image</label>
+  <input class="form-control" type="file" id="receiptUpload" accept="image/*">
+</div>
+
+<div class="mb-3">
+  <button class="btn btn-primary" id="webcamButton">Capture from Webcam</button>
+  <video id="webcamPreview" width="320" height="240" autoplay style="display:none;"></video>
+  <canvas id="webcamCanvas" width="320" height="240" style="display:none;"></canvas>
+</div>
+
+<div class="mb-3">
+  <button class="btn btn-success" id="submitButton">Submit Receipt</button>
+</div>
+
+<div id="statusMessage" class="mt-3 text-info"></div>
+
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
