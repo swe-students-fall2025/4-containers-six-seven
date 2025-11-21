@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
       plugins: {
         title: {
           display: true,
-          text: 'Expenses by Category'
+          text: 'Spending by Category'
         }
       }
     }
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     data: {                                                     // TEMPORARY TEST DATA FOR VIEWING
       labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
       datasets: [{
-        label: 'Total Expenses',
+        label: 'Total Spending (USD)',
         data: [500, 700, 600, 800, 650],
         borderColor: '#0d6efd',
         fill: false
@@ -33,27 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
       plugins: {
         title: {
           display: true,
-          text: 'Monthly Spending Trend'
-        }
-      }
-    }
-  });
-
-  const sellerChart = new Chart(document.getElementById('sellerChart'), {
-    type: 'bar',
-    data: {                                                     // TEMPORARY TEST DATA FOR VIEWING
-      labels: ['Amazon', 'Uber', 'Staples', 'Delta'],
-      datasets: [{
-        label: 'Amount Spent ($)',
-        data: [220, 180, 90, 300],
-        backgroundColor: '#198754'
-      }]
-    },
-    options: {
-      plugins: {
-        title: {
-          display: true,
-          text: 'Top Sellers'
+          text: 'Monthly Spending'
         }
       }
     }
