@@ -1,3 +1,6 @@
+"""
+Login/sign up/Logout page routes for the web application
+"""
 from flask import Blueprint, request
 from flask_login import login_user, logout_user, login_required, current_user
 
@@ -62,10 +65,7 @@ def login():
         return {"error": "Invalid credentials"}, 401
 
     login_user(User(user_doc))
-    return {
-        "message": "Logged in",
-        "user": User(user_doc).to_json()
-    }, 200
+    return {"message": "Logged in", "user": User(user_doc).to_json()}, 200
 
 
 @auth_bp.post("/logout")

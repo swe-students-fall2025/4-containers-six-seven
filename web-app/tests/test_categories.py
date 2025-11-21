@@ -1,4 +1,10 @@
-def test_categories(client, logged_in_user):
+"""
+Tests for the expense categories endpoint.
+"""
+
+
+def test_categories(client, logged_in_user):  # pylint: disable=unused-argument
+    """Test that /api/receipts/categories returns a non-empty list."""
     res = client.get("/api/receipts/categories")
     assert res.status_code == 200
     assert "categories" in res.json

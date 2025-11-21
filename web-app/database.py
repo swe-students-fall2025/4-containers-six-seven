@@ -15,13 +15,16 @@ from typing import Optional, Dict, Any, List
 from pymongo import MongoClient, DESCENDING
 from pymongo.errors import ConnectionFailure
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class WebAppDatabase:
     """MongoDB interface used by the web backend."""
 
-    def __init__(self, mongo_uri: Optional[str] = None, mongo_db_name: Optional[str] = None):
+    def __init__(
+        self, mongo_uri: Optional[str] = None, mongo_db_name: Optional[str] = None
+    ):
         self.mongo_uri = mongo_uri or os.getenv("MONGO_URI", "mongodb://mongodb:27017")
         self.mongo_db_name = mongo_db_name or os.getenv("MONGO_DB_NAME", "receipts_db")
 
@@ -64,15 +67,18 @@ class WebAppDatabase:
         return doc
 
     def get_user_by_email(self, email: str) -> Optional[Dict]:
+        """Retrieve a user document by email address."""
         return self.users.find_one({"email": email})
 
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
         """Get user by string ObjectId."""
-        doc = self.users.find_one({"_id": user_id}) or \
-            self.users.find_one({"_id": ObjectId(user_id)}) 
+        doc = self.users.find_one({"_id": user_id}) or self.users.find_one(
+            {"_id": ObjectId(user_id)}
+        )
         return doc
 
     def verify_password(self, stored_hash: str, password: str) -> bool:
+        """Check if the password matches the stored hash"""
         return check_password_hash(stored_hash, password)
 
     # RECEIPT METHODS
@@ -90,7 +96,6 @@ class WebAppDatabase:
             "image_path": image_path,
             "status": "pending",
             "created_at": datetime.now(timezone.utc),
-
             # ML fields (to be filled by worker)
             "merchant": None,
             "date": None,
@@ -107,15 +112,19 @@ class WebAppDatabase:
         return str(result.inserted_id)
 
     def get_receipts_by_user(self, user_id: str) -> List[Dict[str, Any]]:
-        docs = list(self.receipts.find({"user_id": user_id}).sort("created_at", DESCENDING))
+        """Retrieve all receipts for a given user, sorted by creation date."""
+        docs = list(
+            self.receipts.find({"user_id": user_id}).sort("created_at", DESCENDING)
+        )
         for d in docs:
             d["_id"] = str(d["_id"])
         return docs
 
     def get_receipt_by_id(self, receipt_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a single receipt by its ObjectID string"""
         try:
             oid = ObjectId(receipt_id)
-        except Exception:
+        except InvalidId:
             return None
 
         doc = self.receipts.find_one({"_id": oid})
@@ -127,24 +136,25 @@ class WebAppDatabase:
         """Manual editing of receipt fields."""
         try:
             oid = ObjectId(receipt_id)
-        except Exception:
+        except InvalidId:
             return False
 
         res = self.receipts.update_one({"_id": oid}, {"$set": update_data})
         return res.modified_count > 0
 
     def delete_receipt(self, receipt_id: str) -> bool:
+        """Delete a receipt by its objectId string"""
         try:
             oid = ObjectId(receipt_id)
-        except Exception:
+        except InvalidId:
             return False
 
         res = self.receipts.delete_one({"_id": oid})
         return res.deleted_count > 0
 
-    # 
+    #
     # STATISTICS
-    # 
+    #
     def get_statistics(self, user_id: str) -> Dict[str, Any]:
         """
         Minimal statistics for /api/receipts/statistics.

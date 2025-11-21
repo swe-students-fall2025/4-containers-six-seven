@@ -1,18 +1,31 @@
+"""
+Pytest configuration and fixtures for the web app test suite.
+
+This module provides:
+- Mock MongoDB client using mongomock
+- Flask test client fixtures
+- Pre-authenticated user fixture for protected routes
+"""
+
 import os
+
+# Set environment variables before importing app modules
+os.environ["SECRET_KEY"] = "test-secret"
+
+# pylint: disable=wrong-import-position
 import pytest
 import mongomock
 from werkzeug.security import generate_password_hash
 
-os.environ["SECRET_KEY"] = "test-secret"
-
 from app import create_app
-from database import WebAppDatabase
+from database import WebAppDatabase, db
+
+# pylint: enable=wrong-import-position
 
 
-@pytest.fixture
-def app(monkeypatch):
+@pytest.fixture(name="application")
+def fixture_application(monkeypatch):
     """Use pytest-flask 'app' fixture pattern."""
-
     # Patch DB to use mongomock
     mock_client = mongomock.MongoClient()
 
@@ -25,37 +38,34 @@ def app(monkeypatch):
 
     monkeypatch.setattr(WebAppDatabase, "connect", fake_connect)
 
-    from database import db
     db.connect()  # reconnect after monkeypatch
 
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SECRET_KEY"] = "test-secret"
-    return app
+    application = create_app()
+    application.config["TESTING"] = True
+    application.config["SECRET_KEY"] = "test-secret"
+
+    return application
 
 
-@pytest.fixture
-def client(app):
-    """pytest-flask fixture: provides test client"""
-    return app.test_client()
+@pytest.fixture(name="client")
+def fixture_client(application):
+    """pytest-flask fixture: provides test client."""
+    return application.test_client()
 
 
-@pytest.fixture
-def logged_in_user(client):
+@pytest.fixture(name="logged_in_user")
+def fixture_logged_in_user(client):
     """Insert user + directly login through session cookie."""
-
-    from database import db
-    from werkzeug.security import generate_password_hash
-
     user_doc = {
         "_id": "507f1f77bcf86cd799439011",
         "username": "testuser",
         "email": "user@test.com",
-        "password_hash": generate_password_hash("anything")
+        "password_hash": generate_password_hash("anything"),
     }
 
     db.users.insert_one(user_doc)
-    with client: 
+
+    with client:
         with client.session_transaction() as sess:
             sess["_user_id"] = user_doc["_id"]
             sess["_fresh"] = True

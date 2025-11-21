@@ -1,5 +1,5 @@
-import pytest
-import database    # IMPORTANT: import the module, not db directly
+"""Test analytics"""
+import database  # IMPORTANT: import the module, not db directly
 
 
 def test_analytics(client, logged_in_user):
@@ -8,22 +8,24 @@ def test_analytics(client, logged_in_user):
     """
 
     # Insert mock receipts using the patched DB
-    database.db.receipts.insert_many([
-        {
-            "user_id": logged_in_user["_id"],
-            "status": "completed",
-            "total": 10.0,
-            "category": "Dining",
-            "date": "2025-01-15",
-        },
-        {
-            "user_id": logged_in_user["_id"],
-            "status": "completed",
-            "total": 25.50,
-            "category": "Groceries",
-            "date": "2025-01-20",
-        }
-    ])
+    database.db.receipts.insert_many(
+        [
+            {
+                "user_id": logged_in_user["_id"],
+                "status": "completed",
+                "total": 10.0,
+                "category": "Dining",
+                "date": "2025-01-15",
+            },
+            {
+                "user_id": logged_in_user["_id"],
+                "status": "completed",
+                "total": 25.50,
+                "category": "Groceries",
+                "date": "2025-01-20",
+            },
+        ]
+    )
 
     # Call analytics endpoint
     res = client.get("/api/receipts/analytics")

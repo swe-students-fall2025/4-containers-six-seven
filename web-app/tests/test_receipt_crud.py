@@ -1,13 +1,21 @@
+"""
+Tests for receipt CRUD operations: list, get, update, delete.
+"""
+
 import io
 
 
 def _upload(client):
+    """Helper function to upload a test receipt image."""
     data = {"file": (io.BytesIO(b"abc"), "test.jpg")}
-    res = client.post("/api/receipts/upload", data=data, content_type="multipart/form-data")
+    res = client.post(
+        "/api/receipts/upload", data=data, content_type="multipart/form-data"
+    )
     return res.json["receipt_id"]
 
 
-def test_receipt_crud_flow(client, logged_in_user):
+def test_receipt_crud_flow(client, logged_in_user):  # pylint: disable=unused-argument
+    """Test full receipt lifecycle: upload, list, get, update, delete."""
     receipt_id = _upload(client)
 
     # list
@@ -20,7 +28,9 @@ def test_receipt_crud_flow(client, logged_in_user):
     assert r_get.status_code == 200
 
     # update
-    r_patch = client.patch(f"/api/receipts/{receipt_id}", json={"merchant": "Starbucks"})
+    r_patch = client.patch(
+        f"/api/receipts/{receipt_id}", json={"merchant": "Starbucks"}
+    )
     assert r_patch.status_code == 200
 
     # delete
