@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="text-center">
+    <h2 class="mb-4">Receipt Scanner</h2>
+    <p class="lead">Scan, track, and categorize expenses</p>
+
+    <div class="row mt-5">
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Upload Receipts</h5>
+            <p class="card-text">Use camera or drag-and-drop to upload receipts</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">Upload</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Receipt History</h5>
+            <p class="card-text">View and manage scanned receipts</p>
+            <a href="{{ url_for('history') }}" class="btn btn-primary">History</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Analytics</h5>
+            <p class="card-text">See spending trends and categories</p>
+            <a href="{{ url_for('analytics') }}" class="btn btn-primary">Analytics</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

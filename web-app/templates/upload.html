@@ -3,12 +3,15 @@
 <h2>Upload Receipt</h2>
 
 <div class="mb-3">
-  <label for="receiptUpload" class="form-label">Drag & Drop or Select Receipt Image</label>
+  <label for="receiptUpload" class="form-label">Drag & drop file or choose file to upload:</label>
   <input class="form-control" type="file" id="receiptUpload" accept="image/*">
 </div>
 
 <div class="mb-3">
-  <button class="btn btn-primary" id="webcamButton">Capture from Webcam</button>
+  <label for="receiptUpload" class="form-label">Take photo of receipt:</label>
+  <button class="btn btn-primary" id="webcamButton">Camera</button>
+  <button class="btn btn-primary" id="camera-capture" disabled>Take Photo</button>
+  <button class="btn btn-outline-secondary" id="camera-stop" disabled>Stop Camera</button>
   <video id="webcamPreview" width="320" height="240" autoplay style="display:none;"></video>
   <canvas id="webcamCanvas" width="320" height="240" style="display:none;"></canvas>
 </div>
