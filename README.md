@@ -15,12 +15,12 @@ The **Receipt Scanner & Expense Categorizer** is a containerized application des
 2.  **Web App:** A dashboard to view receipts, analytics, and spending history.
 3.  **Database:** A MongoDB instance storing all data.
 
-## Team Members
-* **Person 1 (DevOps):** [Anshu Aramandla](https://github.com/aa10150)
+## Team Members 
+* **Person 1 (DevOps):** [Majo Salgado](https://github.com/mariajsalgadoq)
 * **Person 2 (Data/ML):** [Apoorv Belgundi](https://github.com/apoorvib)
 * **Person 3 (ML Client):** [Galal Bichara](https://github.com/gkbichara)
 * **Person 4 (Web Backend):** [Asim](https://github.com/asimd0)
-* **Person 5 (Web Frontend):** [Majo Salgado](https://github.com/mariajsalgadoq)
+* **Person 5 (Web Frontend):** [Anshu Aramandla](https://github.com/aa10150)
 
 ## Setup Instructions
 
