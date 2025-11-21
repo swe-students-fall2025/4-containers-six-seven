@@ -22,14 +22,6 @@ The **Receipt Scanner & Expense Categorizer** is a containerized application des
 * **Person 4 (Web Backend):** [Asim](https://github.com/asimd0)
 * **Person 5 (Web Frontend):** [Majo Salgado](https://github.com/mariajsalgadoq)
 
-## Technologies Used
-* **Containerization:** Docker, Docker Compose
-* **Database:** MongoDB
-* **Backend:** Python, Flask
-* **Machine Learning:** TensorFlow / PyTorch (depending on Person 3's choice), OpenCV
-* **CI/CD:** GitHub Actions
-* **Linting & Testing:** Pylint, Black, Pytest
-
 ## Setup Instructions
 
 ### Prerequisites
@@ -59,3 +51,10 @@ The **Receipt Scanner & Expense Categorizer** is a containerized application des
     * Web Dashboard: [http://localhost:5000](http://localhost:5000)
     * MongoDB: `localhost:27017`
 
+## Technologies Used
+* **Containerization:** Docker, Docker Compose
+* **Database:** MongoDB
+* **Backend:** Python, Flask
+* **Machine Learning:** TensorFlow / PyTorch (depending on Person 3's choice), OpenCV
+* **CI/CD:** GitHub Actions
+* **Linting & Testing:** Pylint, Black, Pytest
