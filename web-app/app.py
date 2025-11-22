@@ -8,7 +8,7 @@ registers blueprints, and sets up error handlers.
 import os
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, render_template
 from flask_login import LoginManager
 
 from database import db
@@ -60,8 +60,25 @@ def create_app():
         return {"error": "Internal Server Error"}, 500
 
     @application.route("/")
-    def home():
-        return {"status": "web-app running"}
+    def index():
+        # later you'll pull stats from DB; for now just stub
+        return render_template("index.html",
+                            total_spend_month="$0.00",
+                            total_receipts=0,
+                            top_category=None,
+                            recent_receipts=[])
+
+    @application.route("/upload")
+    def upload():
+        return render_template("upload.html")
+
+    @application.route("/history")
+    def history():
+        return render_template("history.html")
+
+    @application.route("/analytics")
+    def analytics():
+        return render_template("analytics.html")
 
     return application
 
