@@ -10,12 +10,12 @@ torch>=2.4.0
 
 # OCR (Person 2's dependencies)
 easyocr>=1.7.1
-opencv-python>=4.8.1.78
+opencv-python==4.8.1.78
 python-dotenv>=1.0.0
 openai>=1.40.0
 
 # Additional OCR dependencies
-numpy>=1.24.0
+numpy<2
 
 # Testing
 pytest>=7.4.3
