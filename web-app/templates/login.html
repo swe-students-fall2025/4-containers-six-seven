@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-center mb-4">Login</h2>
+        
+        <div id="errorMessage" class="alert alert-danger" style="display: none;"></div>
+        
+        <form id="loginForm">
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
+        </form>
+        
+        <div class="text-center">
+          <p class="mb-0">Don't have an account? <a href="{{ url_for('auth.signup_page') }}">Sign up</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const errorMessage = document.getElementById('errorMessage');
+  errorMessage.style.display = 'none';
+  
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+      credentials: 'include' // Include cookies for session
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      // Login successful - redirect to home or intended page
+      const urlParams = new URLSearchParams(window.location.search);
+      const next = urlParams.get('next') || '/';
+      window.location.href = next;
+    } else {
+      // Show error message
+      errorMessage.textContent = data.error || 'Login failed';
+      errorMessage.style.display = 'block';
+    }
+  } catch (error) {
+    errorMessage.textContent = 'Network error. Please try again.';
+    errorMessage.style.display = 'block';
+    console.error('Login error:', error);
+  }
+});
+</script>
+{% endblock %}
+

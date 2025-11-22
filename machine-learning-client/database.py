@@ -20,7 +20,7 @@ class ReceiptDatabase:
         mongo_user: Optional[str] = None,
         mongo_pass: Optional[str] = None,
         mongo_db_name: Optional[str] = None,
-        mongo_host: str = "mongodb",
+        mongo_host: Optional[str] = None,
     ):
         """
         Initialize database connection.
@@ -29,12 +29,13 @@ class ReceiptDatabase:
             mongo_user: MongoDB username (defaults to env var MONGO_USER)
             mongo_pass: MongoDB password (defaults to env var MONGO_PASS)
             mongo_db_name: Database name (defaults to env var MONGO_DB_NAME)
-            mongo_host: MongoDB host (defaults to 'mongodb' for docker)
+            mongo_host: MongoDB host (defaults to env var MONGO_HOST or 'localhost' for local dev)
         """
         self.mongo_user = mongo_user or os.getenv("MONGO_USER", "admin")
         self.mongo_pass = mongo_pass or os.getenv("MONGO_PASS", "password")
         self.mongo_db_name = mongo_db_name or os.getenv("MONGO_DB_NAME", "receipts_db")
-        self.mongo_host = mongo_host
+        # Default to localhost for local development, mongodb for Docker
+        self.mongo_host = mongo_host or os.getenv("MONGO_HOST", "localhost")
 
         self.client = None
         self.database = None
@@ -49,17 +50,60 @@ class ReceiptDatabase:
         """
         try:
             connection_string = f"mongodb://{self.mongo_user}:{self.mongo_pass}@{self.mongo_host}:27017/"
+            print(
+                f"[DEBUG] Connecting to MongoDB at: mongodb://{self.mongo_user}:***@{self.mongo_host}:27017/"
+            )
             self.client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
             # Test connection
             self.client.admin.command("ping")
             self.database = self.client[self.mongo_db_name]
             self.collection = self.database["receipts"]
+            print("MongoDB connection successful")
             return True
         except ConnectionFailure as e:
-            print(f"Failed to connect to MongoDB: {e}")
+            error_str = str(e)
+            print(f"MongoDB connection failed: {e}")
+            # Try connecting without authentication if auth fails
+            if (
+                "Authentication failed" in error_str
+                or "AuthenticationFailed" in error_str
+                or "code: 18" in error_str
+            ):
+                print(
+                    "Authentication failed. Attempting connection without credentials..."
+                )
+                return self._connect_without_auth()
             return False
         except PyMongoError as e:
+            error_str = str(e)
             print(f"MongoDB error: {e}")
+            # Try connecting without authentication if it's an auth error
+            if (
+                "Authentication failed" in error_str
+                or "AuthenticationFailed" in error_str
+                or "code: 18" in error_str
+            ):
+                print(
+                    "Authentication failed. Attempting connection without credentials..."
+                )
+                return self._connect_without_auth()
+            return False
+
+    def _connect_without_auth(self) -> bool:
+        """Attempt to connect to MongoDB without authentication (for local dev)."""
+        try:
+            # Try connection without username/password
+            simple_uri = f"mongodb://{self.mongo_host}:27017/"
+            print(f"Trying connection without auth: {simple_uri}")
+            self.client = MongoClient(simple_uri, serverSelectionTimeoutMS=5000)
+            self.client.admin.command("ping")
+
+            self.database = self.client[self.mongo_db_name]
+            self.collection = self.database["receipts"]
+            print("Connected to MongoDB without authentication.")
+            return True
+        except Exception as e:
+            print(f"Failed to connect without authentication: {e}")
             return False
 
     def disconnect(self):
@@ -200,6 +244,57 @@ class ReceiptDatabase:
         except PyMongoError as e:
             print(f"Error retrieving receipts by category: {e}")
             return []
+
+    def get_pending_receipts(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Retrieve receipts with pending status for processing.
+
+        Args:
+            limit: Maximum number of receipts to return
+
+        Returns:
+            list: List of pending receipt dictionaries
+        """
+        try:
+            receipts = list(
+                self.collection.find({"status": "pending"})
+                .sort("created_at", DESCENDING)
+                .limit(limit)
+            )
+            for receipt in receipts:
+                receipt["_id"] = str(receipt["_id"])
+            return receipts
+        except PyMongoError as e:
+            print(f"Error retrieving pending receipts: {e}")
+            return []
+
+    def update_receipt_status(
+        self, receipt_id: str, status: str, update_data: Dict[str, Any]
+    ) -> bool:
+        """
+        Update receipt status and other fields after processing.
+
+        Args:
+            receipt_id: The receipt's unique identifier
+            status: New status (e.g., "completed", "failed")
+            update_data: Dictionary with fields to update (merchant, total, category, etc.)
+
+        Returns:
+            bool: True if update successful, False otherwise
+        """
+        try:
+            from bson import ObjectId
+
+            # Include status in update data
+            update_data["status"] = status
+
+            result = self.collection.update_one(
+                {"_id": ObjectId(receipt_id)}, {"$set": update_data}
+            )
+            return result.modified_count > 0
+        except PyMongoError as e:
+            print(f"Error updating receipt status: {e}")
+            return False
 
     def get_statistics(self) -> Dict[str, Any]:
         """

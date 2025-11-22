@@ -25,7 +25,20 @@ class WebAppDatabase:
     def __init__(
         self, mongo_uri: Optional[str] = None, mongo_db_name: Optional[str] = None
     ):
-        self.mongo_uri = mongo_uri or os.getenv("MONGO_URI", "mongodb://mongodb:27017")
+        # Construct MONGO_URI from components if not provided
+        if mongo_uri:
+            self.mongo_uri = mongo_uri
+        elif os.getenv("MONGO_URI"):
+            self.mongo_uri = os.getenv("MONGO_URI")
+        else:
+            # Build URI from MONGO_USER, MONGO_PASS, and host
+            mongo_user = os.getenv("MONGO_USER", "admin")
+            mongo_pass = os.getenv("MONGO_PASS", "password")
+            # Default to localhost for local development, mongodb for Docker
+            mongo_host = os.getenv("MONGO_HOST", "localhost")
+            self.mongo_uri = f"mongodb://{mongo_user}:{mongo_pass}@{mongo_host}:27017/"
+            print(f"[DEBUG] MongoDB connection string: mongodb://{mongo_user}:***@{mongo_host}:27017/")
+            print(f"[DEBUG] MONGO_HOST from env: {os.getenv('MONGO_HOST', 'NOT SET')}")
         self.mongo_db_name = mongo_db_name or os.getenv("MONGO_DB_NAME", "receipts_db")
 
         self.client = None
@@ -44,12 +57,51 @@ class WebAppDatabase:
             self.users = self.db["users"]
             self.receipts = self.db["receipts"]
             return True
-        except ConnectionFailure:
+        except ConnectionFailure as e:
+            error_str = str(e)
+            print(f"MongoDB connection failed: {e}")
+            # Try connecting without authentication if auth fails
+            if "Authentication failed" in error_str or "AuthenticationFailed" in error_str or "code: 18" in error_str:
+                print("Authentication failed. Attempting connection without credentials...")
+                return self._connect_without_auth()
             return False
+        except Exception as e:
+            error_str = str(e)
+            print(f"MongoDB connection error: {e}")
+            # Try connecting without authentication if it's an auth error
+            if "Authentication failed" in error_str or "AuthenticationFailed" in error_str or "code: 18" in error_str:
+                print("Authentication failed. Attempting connection without credentials...")
+                return self._connect_without_auth()
+            return False
+
+    def _connect_without_auth(self) -> bool:
+        """Attempt to connect to MongoDB without authentication (for local dev)."""
+        try:
+            mongo_host = os.getenv("MONGO_HOST", "localhost")
+            # Try connection without username/password
+            simple_uri = f"mongodb://{mongo_host}:27017/"
+            self.client = MongoClient(simple_uri, serverSelectionTimeoutMS=5000)
+            self.client.admin.command("ping")
+            
+            self.db = self.client[self.mongo_db_name]
+            self.users = self.db["users"]
+            self.receipts = self.db["receipts"]
+            print("Connected to MongoDB without authentication.")
+            return True
+        except Exception as e:
+            print(f"Failed to connect without authentication: {e}")
+            return False
+
+    def _ensure_connected(self):
+        """Ensure database connection is established."""
+        if self.users is None:
+            if not self.connect():
+                raise ConnectionFailure("Failed to connect to MongoDB. Please check your connection settings.")
 
     # USER METHODS
     def create_user(self, username: str, email: str, password: str) -> Optional[Dict]:
         """Create a new user with hashed password."""
+        self._ensure_connected()
         if self.users.find_one({"email": email}):
             return None
 
@@ -68,10 +120,12 @@ class WebAppDatabase:
 
     def get_user_by_email(self, email: str) -> Optional[Dict]:
         """Retrieve a user document by email address."""
+        self._ensure_connected()
         return self.users.find_one({"email": email})
 
     def get_user_by_id(self, user_id: str) -> Optional[Dict]:
         """Get user by string ObjectId."""
+        self._ensure_connected()
         doc = self.users.find_one({"_id": user_id}) or self.users.find_one(
             {"_id": ObjectId(user_id)}
         )
@@ -91,6 +145,7 @@ class WebAppDatabase:
             - classify
             - update document
         """
+        self._ensure_connected()
         doc = {
             "user_id": user_id,
             "image_path": image_path,
@@ -113,6 +168,7 @@ class WebAppDatabase:
 
     def get_receipts_by_user(self, user_id: str) -> List[Dict[str, Any]]:
         """Retrieve all receipts for a given user, sorted by creation date."""
+        self._ensure_connected()
         docs = list(
             self.receipts.find({"user_id": user_id}).sort("created_at", DESCENDING)
         )
@@ -122,6 +178,7 @@ class WebAppDatabase:
 
     def get_receipt_by_id(self, receipt_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve a single receipt by its ObjectID string"""
+        self._ensure_connected()
         try:
             oid = ObjectId(receipt_id)
         except InvalidId:
@@ -134,6 +191,7 @@ class WebAppDatabase:
 
     def update_receipt(self, receipt_id: str, update_data: Dict[str, Any]) -> bool:
         """Manual editing of receipt fields."""
+        self._ensure_connected()
         try:
             oid = ObjectId(receipt_id)
         except InvalidId:
@@ -144,6 +202,7 @@ class WebAppDatabase:
 
     def delete_receipt(self, receipt_id: str) -> bool:
         """Delete a receipt by its objectId string"""
+        self._ensure_connected()
         try:
             oid = ObjectId(receipt_id)
         except InvalidId:
@@ -160,6 +219,7 @@ class WebAppDatabase:
         Minimal statistics for /api/receipts/statistics.
         The detailed analytics are computed in routes.py.
         """
+        self._ensure_connected()
         total_count = self.receipts.count_documents({"user_id": user_id})
         return {"total_receipts": total_count}
 
