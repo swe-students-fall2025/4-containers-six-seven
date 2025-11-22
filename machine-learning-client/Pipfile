@@ -5,17 +5,17 @@ name = "pypi"
 
 [packages]
 # Database
-pymongo = "==4.6.0"
+pymongo = ">=4.6.0"
 
 # Machine Learning
-transformers = "==4.35.2"
-torch = "==2.1.1"
+transformers = ">=4.40.0"
+torch = ">=2.4.0"
 
 # OCR (Person 2's dependencies)
-easyocr = "==1.7.1"
-opencv-python = "==4.8.1.78"
-python-dotenv = "==1.0.0"
-openai = "==1.3.7"
+easyocr = ">=1.7.1"
+opencv-python = ">=4.8.1.78"
+python-dotenv = ">=1.0.0"
+openai = ">=1.40.0"
 
 # Testing
 pytest = "==7.4.3"
@@ -29,4 +29,4 @@ pylint = "==3.0.3"
 [dev-packages]
 
 [requires]
-python_version = "3.10"
+python_version = "3.12"
