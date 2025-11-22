@@ -25,7 +25,17 @@ class WebAppDatabase:
     def __init__(
         self, mongo_uri: Optional[str] = None, mongo_db_name: Optional[str] = None
     ):
-        self.mongo_uri = mongo_uri or os.getenv("MONGO_URI", "mongodb://mongodb:27017")
+        # Construct MONGO_URI from components if not provided
+        if mongo_uri:
+            self.mongo_uri = mongo_uri
+        elif os.getenv("MONGO_URI"):
+            self.mongo_uri = os.getenv("MONGO_URI")
+        else:
+            # Build URI from MONGO_USER, MONGO_PASS, and host
+            mongo_user = os.getenv("MONGO_USER", "admin")
+            mongo_pass = os.getenv("MONGO_PASS", "password")
+            mongo_host = os.getenv("MONGO_HOST", "mongodb")
+            self.mongo_uri = f"mongodb://{mongo_user}:{mongo_pass}@{mongo_host}:27017/"
         self.mongo_db_name = mongo_db_name or os.getenv("MONGO_DB_NAME", "receipts_db")
 
         self.client = None

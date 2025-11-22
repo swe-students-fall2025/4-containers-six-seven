@@ -13,12 +13,13 @@ services:
   ml-client:
     container_name: ml-client
 
-    build: ./machine-learning-client 
+    build: ./machine-learning-client
     environment:
-  
       MONGO_USER: ${MONGO_USER}
       MONGO_PASS: ${MONGO_PASS}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+    volumes:
+      - receipt-uploads:/app/uploads
     depends_on:
       - db
 
@@ -31,9 +32,13 @@ services:
       MONGO_USER: ${MONGO_USER}
       MONGO_PASS: ${MONGO_PASS}
       MONGO_DB_NAME: ${MONGO_DB_NAME}
+    volumes:
+      - receipt-uploads:/app/uploads
     depends_on:
       - db
 
 volumes:
   mongo-data:
+    driver: local
+  receipt-uploads:
     driver: local

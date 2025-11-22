@@ -201,6 +201,57 @@ class ReceiptDatabase:
             print(f"Error retrieving receipts by category: {e}")
             return []
 
+    def get_pending_receipts(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Retrieve receipts with pending status for processing.
+
+        Args:
+            limit: Maximum number of receipts to return
+
+        Returns:
+            list: List of pending receipt dictionaries
+        """
+        try:
+            receipts = list(
+                self.collection.find({"status": "pending"})
+                .sort("created_at", DESCENDING)
+                .limit(limit)
+            )
+            for receipt in receipts:
+                receipt["_id"] = str(receipt["_id"])
+            return receipts
+        except PyMongoError as e:
+            print(f"Error retrieving pending receipts: {e}")
+            return []
+
+    def update_receipt_status(
+        self, receipt_id: str, status: str, update_data: Dict[str, Any]
+    ) -> bool:
+        """
+        Update receipt status and other fields after processing.
+
+        Args:
+            receipt_id: The receipt's unique identifier
+            status: New status (e.g., "completed", "failed")
+            update_data: Dictionary with fields to update (merchant, total, category, etc.)
+
+        Returns:
+            bool: True if update successful, False otherwise
+        """
+        try:
+            from bson import ObjectId
+
+            # Include status in update data
+            update_data["status"] = status
+
+            result = self.collection.update_one(
+                {"_id": ObjectId(receipt_id)}, {"$set": update_data}
+            )
+            return result.modified_count > 0
+        except PyMongoError as e:
+            print(f"Error updating receipt status: {e}")
+            return False
+
     def get_statistics(self) -> Dict[str, Any]:
         """
         Calculate database statistics.

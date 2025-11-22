@@ -7,9 +7,10 @@ registers blueprints, and sets up error handlers.
 
 import os
 
+from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, render_template
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 
 from database import db
 from auth_routes import auth_bp
@@ -61,12 +62,51 @@ def create_app():
 
     @application.route("/")
     def index():
-        # later you'll pull stats from DB; for now just stub
-        return render_template("index.html",
-                            total_spend_month="$0.00",
-                            total_receipts=0,
-                            top_category=None,
-                            recent_receipts=[])
+        """Home page with statistics."""
+        # Initialize default values
+        total_spend_month = "$0.00"
+        total_receipts = 0
+        top_category = None
+        recent_receipts = []
+
+        # Fetch real stats if user is logged in
+        if current_user.is_authenticated:
+            receipts = db.get_receipts_by_user(current_user.id)
+            total_receipts = len(receipts)
+
+            # Calculate current month spending
+            current_month = datetime.now().strftime("%Y-%m")
+            month_total = sum(
+                r.get("total", 0) or 0
+                for r in receipts
+                if r.get("date") and r.get("date", "")[:7] == current_month
+            )
+            total_spend_month = f"${month_total:.2f}"
+
+            # Find top category
+            category_totals = {}
+            for r in receipts:
+                category = r.get("category") or "Uncategorized"
+                total = r.get("total") or 0
+                category_totals[category] = category_totals.get(category, 0) + total
+
+            if category_totals:
+                top_category = max(category_totals.items(), key=lambda x: x[1])[0]
+
+            # Get recent receipts (limit 5, sorted by date)
+            completed_receipts = [
+                r for r in receipts if r.get("status") == "completed" and r.get("date")
+            ]
+            completed_receipts.sort(key=lambda x: x.get("date", ""), reverse=True)
+            recent_receipts = completed_receipts[:5]
+
+        return render_template(
+            "index.html",
+            total_spend_month=total_spend_month,
+            total_receipts=total_receipts,
+            top_category=top_category,
+            recent_receipts=recent_receipts,
+        )
 
     @application.route("/upload")
     def upload():

@@ -65,6 +65,9 @@ def list_receipts():
     """
     List all receipts belonging to the current user.
 
+    Query Parameters:
+        category (optional): Filter receipts by category (case-insensitive)
+
     Response (200 OK):
     {
         "receipts": [
@@ -79,6 +82,17 @@ def list_receipts():
     }
     """
     receipts = db.get_receipts_by_user(current_user.id)
+
+    # Filter by category if provided
+    category = request.args.get("category")
+    if category and category.strip():
+        category_lower = category.strip().lower()
+        receipts = [
+            r
+            for r in receipts
+            if r.get("category") and r.get("category").lower() == category_lower
+        ]
+
     return {"receipts": receipts}, 200
 
 

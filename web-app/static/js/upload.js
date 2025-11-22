@@ -21,6 +21,56 @@ function captureWebcamImage() {
   return webcamCanvas.toDataURL('image/png'); // base64 image
 }
 
+// Convert base64 data URL to Blob
+function dataURLtoBlob(dataurl) {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
+// Poll for receipt status
+function pollReceiptStatus(receiptId, statusElement) {
+  const maxAttempts = 60; // 60 attempts * 3 seconds = 3 minutes max
+  let attempts = 0;
+
+  const poll = () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      statusElement.textContent = "Processing timeout. Please check receipt history.";
+      return;
+    }
+
+    fetch(`/api/receipts/${receiptId}/status`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'completed') {
+          const merchant = data.merchant || 'Unknown';
+          const category = data.category || 'Uncategorized';
+          const total = data.total ? `$${data.total.toFixed(2)}` : 'N/A';
+          statusElement.textContent = `Receipt processed! Merchant: ${merchant}, Category: ${category}, Total: ${total}`;
+        } else if (data.status === 'failed') {
+          statusElement.textContent = "Receipt processing failed. Please try again.";
+        } else {
+          // Still pending, poll again
+          statusElement.textContent = `Processing... (attempt ${attempts})`;
+          setTimeout(poll, 3000); // Poll every 3 seconds
+        }
+      })
+      .catch(error => {
+        console.error("Status poll error:", error);
+        statusElement.textContent = "Error checking status. Please check receipt history.";
+      });
+  };
+
+  poll();
+}
+
 document.getElementById('submitButton').addEventListener('click', () => {
   const fileInput = document.getElementById('receiptUpload');
   const file = fileInput.files[0];
@@ -29,10 +79,11 @@ document.getElementById('submitButton').addEventListener('click', () => {
   const formData = new FormData();
 
   if (file) {
-    formData.append('receipt', file);
+    formData.append('file', file);
   } else if (webcamPreview.srcObject) {
     const imageData = captureWebcamImage();
-    formData.append('receipt_base64', imageData);
+    const blob = dataURLtoBlob(imageData);
+    formData.append('file', blob, 'webcam-capture.png');
   } else {
     status.textContent = "Please upload a file or use the webcam.";
     return;
@@ -40,13 +91,19 @@ document.getElementById('submitButton').addEventListener('click', () => {
 
   status.textContent = "Uploading...";
 
-  fetch('/upload', {
+  fetch('/api/receipts/upload', {
     method: 'POST',
     body: formData
   })
   .then(response => response.json())
   .then(data => {
-    status.textContent = "Receipt processed: " + data.category;
+    if (data.receipt_id) {
+      status.textContent = "Upload successful! Processing receipt...";
+      // Start polling for status
+      pollReceiptStatus(data.receipt_id, status);
+    } else {
+      status.textContent = "Upload failed: " + (data.error || "Unknown error");
+    }
   })
   .catch(error => {
     console.error("Upload error:", error);
