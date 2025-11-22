@@ -1,4 +1,11 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Check authentication on page load
+  const user = await checkAuthStatus();
+  if (!user) {
+    redirectToLogin("/analytics");
+    return;
+  }
+
   // Color palette for category chart
   const colors = [
     "#0d6efd",
@@ -60,9 +67,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Fetch analytics data from API
-  fetch("/api/receipts/analytics")
-    .then((res) => res.json())
+  fetch("/api/receipts/analytics", {
+    credentials: "include",
+  })
+    .then((res) => {
+      if (res.status === 401) {
+        handleUnauthorized("/analytics");
+        return null;
+      }
+      return res.json();
+    })
     .then((data) => {
+      if (!data) return; // Handled by redirect
       // Update category chart
       if (
         data.category_totals &&

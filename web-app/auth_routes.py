@@ -1,13 +1,25 @@
 """
 Login/sign up/Logout page routes for the web application
 """
-from flask import Blueprint, request
+from flask import Blueprint, request, render_template
 from flask_login import login_user, logout_user, login_required, current_user
 
 from database import db
 from models import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+
+@auth_bp.get("/login")
+def login_page():
+    """Render the login page."""
+    return render_template("login.html")
+
+
+@auth_bp.get("/signup")
+def signup_page():
+    """Render the signup page."""
+    return render_template("signup.html")
 
 
 @auth_bp.post("/signup")

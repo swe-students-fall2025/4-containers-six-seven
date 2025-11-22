@@ -2,6 +2,14 @@ const webcamButton = document.getElementById('webcamButton');
 const webcamPreview = document.getElementById('webcamPreview');
 const webcamCanvas = document.getElementById('webcamCanvas');
 
+// Check authentication on page load
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await checkAuthStatus();
+  if (!user) {
+    redirectToLogin('/upload');
+  }
+});
+
 webcamButton.addEventListener('click', () => {
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
@@ -46,9 +54,18 @@ function pollReceiptStatus(receiptId, statusElement) {
       return;
     }
 
-    fetch(`/api/receipts/${receiptId}/status`)
-      .then(response => response.json())
+    fetch(`/api/receipts/${receiptId}/status`, {
+      credentials: 'include'
+    })
+      .then(response => {
+        if (response.status === 401) {
+          handleUnauthorized('/upload');
+          return null;
+        }
+        return response.json();
+      })
       .then(data => {
+        if (!data) return; // Handled by redirect
         if (data.status === 'completed') {
           const merchant = data.merchant || 'Unknown';
           const category = data.category || 'Uncategorized';
@@ -93,10 +110,19 @@ document.getElementById('submitButton').addEventListener('click', () => {
 
   fetch('/api/receipts/upload', {
     method: 'POST',
-    body: formData
+    body: formData,
+    credentials: 'include'
   })
-  .then(response => response.json())
+  .then(response => {
+    if (response.status === 401) {
+      handleUnauthorized('/upload');
+      return null;
+    }
+    return response.json();
+  })
   .then(data => {
+    if (!data) return; // Handled by redirect
+    
     if (data.receipt_id) {
       status.textContent = "Upload successful! Processing receipt...";
       // Start polling for status
@@ -107,6 +133,6 @@ document.getElementById('submitButton').addEventListener('click', () => {
   })
   .catch(error => {
     console.error("Upload error:", error);
-    status.textContent = "Upload failed.";
+    status.textContent = "Upload failed. Please try again.";
   });
 });

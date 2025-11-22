@@ -12,6 +12,10 @@ import time
 from typing import Dict, Any
 
 import cv2
+from dotenv import load_dotenv
+
+# Load environment variables from project root
+load_dotenv()
 
 from ocr_processor import process_receipt
 from expense_classifier import add_category_to_receipt
@@ -48,14 +52,57 @@ def process_pending_receipt(receipt: Dict[str, Any], db: ReceiptDatabase) -> boo
     logger.info(f"Processing receipt {receipt_id} from {image_path}")
 
     try:
+        # Normalize the path first
+        original_path = image_path
+        image_path = os.path.normpath(image_path)
+
+        # Handle relative paths - if path is relative, make it relative to project root
+        if not os.path.isabs(image_path):
+            # Get project root (parent of machine-learning-client directory)
+            project_root = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..")
+            )
+            image_path = os.path.join(project_root, image_path)
+            image_path = os.path.normpath(image_path)
+
+        logger.info(f"Looking for image at: {image_path}")
+        logger.info(f"File exists check: {os.path.exists(image_path)}")
+
         # Check if file exists
         if not os.path.exists(image_path):
-            logger.error(f"Image file not found: {image_path}")
-            # Update status to failed
-            db.update_receipt_status(
-                receipt_id, "failed", {"error": f"Image file not found: {image_path}"}
-            )
-            return False
+            # Try alternative locations
+            # 1. web-app/uploads/ (if file was saved there)
+            # 2. project root uploads/ (intended location)
+            # 3. Just the filename in web-app/uploads/
+            filename = os.path.basename(original_path)
+            alternatives = [
+                os.path.join(
+                    os.path.dirname(__file__), "..", "web-app", "uploads", filename
+                ),
+                os.path.join(os.path.dirname(__file__), "..", "uploads", filename),
+                os.path.join(os.path.dirname(__file__), "..", "web-app", original_path),
+                os.path.join(os.path.dirname(__file__), "..", original_path),
+                original_path,
+            ]
+
+            for alt_path in alternatives:
+                alt_path = os.path.normpath(os.path.abspath(alt_path))
+                logger.info(f"Trying alternative path: {alt_path}")
+                if os.path.exists(alt_path):
+                    image_path = alt_path
+                    logger.info(f"Found file at alternative path: {image_path}")
+                    break
+            else:
+                logger.error(
+                    f"Image file not found at any location. Original: {original_path}, Tried: {image_path}"
+                )
+                # Update status to failed
+                db.update_receipt_status(
+                    receipt_id,
+                    "failed",
+                    {"error": f"Image file not found: {original_path}"},
+                )
+                return False
 
         # Load image
         image = cv2.imread(image_path)

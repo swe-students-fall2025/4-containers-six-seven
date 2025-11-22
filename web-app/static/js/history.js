@@ -1,13 +1,29 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Check authentication on page load
+  const user = await checkAuthStatus();
+  if (!user) {
+    redirectToLogin("/history");
+    return;
+  }
+
   const tableBody = document.querySelector("#receiptTable tbody");
   const categoryFilter = document.getElementById("categoryFilter");
   const clearFilters = document.getElementById("clearFilters");
 
   // Fetch categories and populate dropdown
   function loadCategories() {
-    fetch("/api/receipts/categories")
-      .then((res) => res.json())
+    fetch("/api/receipts/categories", {
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          handleUnauthorized("/history");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) return; // Handled by redirect
         // Clear existing options except "All Categories"
         categoryFilter.innerHTML = '<option value="">All Categories</option>';
         // Add categories from API
@@ -29,9 +45,18 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `/api/receipts?category=${encodeURIComponent(category)}`
       : "/api/receipts";
 
-    fetch(url)
-      .then((res) => res.json())
+    fetch(url, {
+      credentials: "include",
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          handleUnauthorized("/history");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) return; // Handled by redirect
         tableBody.innerHTML = "";
         if (data.receipts && data.receipts.length > 0) {
           data.receipts.forEach((receipt) => {
@@ -74,9 +99,20 @@ document.addEventListener("DOMContentLoaded", () => {
   tableBody.addEventListener("click", (e) => {
     if (e.target.tagName === "BUTTON") {
       const id = e.target.dataset.id;
-      fetch(`/api/receipts/${id}`, { method: "DELETE" }).then(() =>
-        fetchReceipts()
-      );
+      fetch(`/api/receipts/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+        .then((res) => {
+          if (res.status === 401) {
+            handleUnauthorized("/history");
+            return;
+          }
+          fetchReceipts();
+        })
+        .catch((error) => {
+          console.error("Delete error:", error);
+        });
     }
   });
 
