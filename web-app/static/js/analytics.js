@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       plugins: {
         title: {
           display: true,
-          text: "Monthly Spending",
+          text: "Spending Over Time",
         },
       },
     },
