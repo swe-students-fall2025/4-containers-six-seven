@@ -58,13 +58,14 @@ def classify_expense(receipt_data: Dict[str, Any]) -> str:
     """
     Classify a receipt into an expense category.
 
-    Uses the merchant name and item descriptions to determine the most
-    appropriate expense category using zero-shot classification.
+    Uses the merchant name, item descriptions, and GPT's category hint to determine
+    the most appropriate expense category using zero-shot classification.
 
     Args:
         receipt_data: Dictionary containing receipt information with keys:
             - merchant (str): Store/merchant name
             - items (List[Dict]): List of purchased items
+            - category_hint (str, optional): GPT's suggested category for context
             - total (float): Total amount (optional, not used for classification)
 
     Returns:
@@ -73,7 +74,7 @@ def classify_expense(receipt_data: Dict[str, Any]) -> str:
     Example:
         >>> receipt = {"merchant": "Starbucks", "items": [{"name": "Coffee"}]}
         >>> category = classify_expense(receipt)
-        >>> print(category)  # "Food & Dining"
+        >>> print(category)  # "Dining"
     """
     # Extract merchant name
     merchant = receipt_data.get("merchant", "")
@@ -82,16 +83,22 @@ def classify_expense(receipt_data: Dict[str, Any]) -> str:
     items = receipt_data.get("items", [])
     item_names = [item.get("name", "") for item in items if item.get("name")]
 
-    # Build text to classify
+    # Get GPT's category hint if available
+    category_hint = receipt_data.get("category_hint", "")
+
+    # Build text to classify with GPT hint as context
     text_parts = []
     if merchant:
-        text_parts.append(f"Merchant: {merchant}")
+        text_parts.append(merchant)
     if item_names:
-        text_parts.append(f"Items: {', '.join(item_names)}")
+        text_parts.append(", ".join(item_names))
+    if category_hint:
+        # Add GPT's hint as contextual information
+        text_parts.append(f"(likely {category_hint})")
 
     # Combine into single text
     if text_parts:
-        text_to_classify = ". ".join(text_parts)
+        text_to_classify = " ".join(text_parts)
     else:
         # No merchant or items - default to "Other"
         logger.warning("No merchant or items found in receipt, defaulting to 'Other'")
