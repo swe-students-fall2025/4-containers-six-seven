@@ -14,10 +14,20 @@ from werkzeug.utils import secure_filename
 # Allowed image types
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 
-# Folder to store uploads - use absolute path relative to project root
-# This ensures worker can find files regardless of where it runs from
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-UPLOAD_FOLDER = os.path.join(PROJECT_ROOT, "uploads")
+
+# Folder to store uploads
+# In Docker: use /app/uploads (shared volume)
+# In local dev: use project root uploads
+# Check at runtime, not at import time, to ensure Docker volume is detected
+def get_upload_folder():
+    """Get the upload folder path, checking Docker volume at runtime."""
+    if os.path.exists("/app/uploads"):
+        # Docker environment - use shared volume
+        return "/app/uploads"
+    else:
+        # Local development - use project root
+        PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        return os.path.join(PROJECT_ROOT, "uploads")
 
 
 def allowed_file(filename: str) -> bool:
@@ -51,16 +61,19 @@ def save_uploaded_file(file) -> str:
 
     new_name = f"{uuid.uuid4().hex}.{ext}"
 
+    # Determine upload folder at runtime (checks Docker volume)
+    upload_folder = get_upload_folder()
+
     # Ensure upload folder exists (create if it doesn't)
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(upload_folder, exist_ok=True)
 
     # Use absolute path to ensure file is saved in the correct location
-    save_path = os.path.join(UPLOAD_FOLDER, new_name)
+    save_path = os.path.join(upload_folder, new_name)
     save_path = os.path.abspath(os.path.normpath(save_path))
 
     print(f"[DEBUG] Saving file to: {save_path}")
-    print(f"[DEBUG] UPLOAD_FOLDER: {UPLOAD_FOLDER}")
-    print(f"[DEBUG] Folder exists: {os.path.exists(UPLOAD_FOLDER)}")
+    print(f"[DEBUG] UPLOAD_FOLDER: {upload_folder}")
+    print(f"[DEBUG] Folder exists: {os.path.exists(upload_folder)}")
 
     # Save file bytes using absolute path
     file.save(save_path)
