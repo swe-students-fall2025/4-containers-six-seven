@@ -108,6 +108,7 @@ def parse_receipt(raw_text: str) -> Dict[str, Any]:
             "tax": float | None,
             "subtotal": float | None,
             "items": List[Dict[str, Any]],  # Each item: {"name": str, "quantity": int|float|None, "price": float, "unit_price": float|None}
+            "category_hint": str | None,  # GPT's suggested expense category
             "raw_text": str,
             "confidence": float  # Average OCR confidence (not used here, set to 1.0)
         }
@@ -126,6 +127,7 @@ def parse_receipt(raw_text: str) -> Dict[str, Any]:
             "tax": None,
             "subtotal": None,
             "items": [],
+            "category_hint": None,
             "raw_text": raw_text,
             "confidence": 0.0,
         }
@@ -138,11 +140,25 @@ def parse_receipt(raw_text: str) -> Dict[str, Any]:
 
         system_prompt = (
             "You are a receipt parsing assistant. Extract structured data "
-            "from receipt text. Return a JSON object with the following fields: "
-            "merchant (store name), date (ISO format YYYY-MM-DD), total (float), "
-            "tax (float or null), subtotal (float or null), and items (array of "
-            "objects with name, quantity, price, unit_price). If a field cannot "
-            "be determined, use null. Ensure dates are in ISO format YYYY-MM-DD."
+            "from receipt text. Return a JSON object with the following fields:\n"
+            "- merchant (string or null): Store/merchant name\n"
+            "- date (string or null): Date in ISO format YYYY-MM-DD only\n"
+            "- total (number or null): Total amount as a float\n"
+            "- tax (number or null): Tax amount as a float\n"
+            "- subtotal (number or null): Subtotal amount as a float\n"
+            "- items (array or null): Array of objects, each with: name (string), "
+            "quantity (number or null), price (number), unit_price (number or null)\n"
+            "- category_hint (string or null): Suggested expense category. "
+            "MUST be exactly one of: Dining, Groceries, Transportation, "
+            "Office Supplies, Travel & Lodging, Entertainment, Utilities, "
+            "Healthcare, Shopping, Sports & Fitness, or Other. "
+            "Use null only if category cannot be determined.\n\n"
+            "IMPORTANT FORMAT REQUIREMENTS:\n"
+            "- All dates MUST be in ISO format YYYY-MM-DD (e.g., '2025-01-15')\n"
+            "- All numbers MUST be valid JSON numbers (floats, not strings)\n"
+            "- category_hint MUST match one of the 11 categories exactly (case-sensitive)\n"
+            "- Use null for any field that cannot be determined\n"
+            "- Return valid JSON only, no additional text or formatting"
         )
 
         user_prompt = f"Extract receipt data from this text:\n\n{truncated_text}"
@@ -203,6 +219,7 @@ def parse_receipt(raw_text: str) -> Dict[str, Any]:
                 else None
             ),
             "items": parsed_data.get("items", []),
+            "category_hint": parsed_data.get("category_hint"),
             "raw_text": raw_text,
             "confidence": 1.0,  # LLM parsing doesn't have confidence score
         }
@@ -244,6 +261,7 @@ def parse_receipt(raw_text: str) -> Dict[str, Any]:
             "tax": None,
             "subtotal": None,
             "items": [],
+            "category_hint": None,
             "raw_text": raw_text,
             "confidence": 0.0,
         }
@@ -268,6 +286,7 @@ def process_receipt(image: np.ndarray) -> Dict[str, Any]:
             "tax": float | None,
             "subtotal": float | None,
             "items": List[Dict[str, Any]],
+            "category_hint": str | None,  # GPT's suggested expense category
             "raw_text": str,
             "confidence": float  # Average OCR confidence
         }
@@ -296,6 +315,7 @@ def process_receipt(image: np.ndarray) -> Dict[str, Any]:
             "tax": None,
             "subtotal": None,
             "items": [],
+            "category_hint": None,
             "raw_text": "",
             "confidence": 0.0,
         }

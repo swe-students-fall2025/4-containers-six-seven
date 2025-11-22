@@ -55,54 +55,59 @@ def process_pending_receipt(receipt: Dict[str, Any], db: ReceiptDatabase) -> boo
         # Normalize the path first
         original_path = image_path
         image_path = os.path.normpath(image_path)
+        filename = os.path.basename(image_path)
 
-        # Handle relative paths - if path is relative, make it relative to project root
-        if not os.path.isabs(image_path):
-            # Get project root (parent of machine-learning-client directory)
+        logger.info(f"Processing receipt with image path: {original_path}")
+
+        # In Docker, files are in /app/uploads (shared volume)
+        # The path stored in DB might be /uploads/filename or /app/uploads/filename
+        # Try both Docker volume location and original path
+        docker_volume_path = os.path.join("/app", "uploads", filename)
+
+        # List of paths to try (Docker first, then original, then local dev paths)
+        paths_to_try = [
+            docker_volume_path,  # Docker volume location (most likely in Docker)
+            image_path,  # Original path as stored (works for both Docker and local)
+        ]
+
+        # Add local dev paths if we're not in Docker (path doesn't start with /app)
+        # This ensures local development still works
+        if not image_path.startswith("/app"):
             project_root = os.path.abspath(
                 os.path.join(os.path.dirname(__file__), "..")
             )
-            image_path = os.path.join(project_root, image_path)
-            image_path = os.path.normpath(image_path)
+            # Add local dev paths as fallbacks (won't interfere if original path works)
+            paths_to_try.extend(
+                [
+                    os.path.join(project_root, "uploads", filename),
+                    os.path.join(project_root, "web-app", "uploads", filename),
+                    os.path.join(project_root, image_path.lstrip("/")),
+                ]
+            )
 
-        logger.info(f"Looking for image at: {image_path}")
-        logger.info(f"File exists check: {os.path.exists(image_path)}")
+        # Try each path
+        found_path = None
+        for path_to_try in paths_to_try:
+            path_to_try = os.path.normpath(path_to_try)
+            logger.info(f"Checking path: {path_to_try}")
+            if os.path.exists(path_to_try):
+                found_path = path_to_try
+                logger.info(f"Found file at: {found_path}")
+                break
 
-        # Check if file exists
-        if not os.path.exists(image_path):
-            # Try alternative locations
-            # 1. web-app/uploads/ (if file was saved there)
-            # 2. project root uploads/ (intended location)
-            # 3. Just the filename in web-app/uploads/
-            filename = os.path.basename(original_path)
-            alternatives = [
-                os.path.join(
-                    os.path.dirname(__file__), "..", "web-app", "uploads", filename
-                ),
-                os.path.join(os.path.dirname(__file__), "..", "uploads", filename),
-                os.path.join(os.path.dirname(__file__), "..", "web-app", original_path),
-                os.path.join(os.path.dirname(__file__), "..", original_path),
-                original_path,
-            ]
+        if not found_path:
+            logger.error(
+                f"Image file not found. Original: {original_path}, Tried: {paths_to_try}"
+            )
+            # Update status to failed
+            db.update_receipt_status(
+                receipt_id,
+                "failed",
+                {"error": f"Image file not found: {original_path}"},
+            )
+            return False
 
-            for alt_path in alternatives:
-                alt_path = os.path.normpath(os.path.abspath(alt_path))
-                logger.info(f"Trying alternative path: {alt_path}")
-                if os.path.exists(alt_path):
-                    image_path = alt_path
-                    logger.info(f"Found file at alternative path: {image_path}")
-                    break
-            else:
-                logger.error(
-                    f"Image file not found at any location. Original: {original_path}, Tried: {image_path}"
-                )
-                # Update status to failed
-                db.update_receipt_status(
-                    receipt_id,
-                    "failed",
-                    {"error": f"Image file not found: {original_path}"},
-                )
-                return False
+        image_path = found_path
 
         # Load image
         image = cv2.imread(image_path)
